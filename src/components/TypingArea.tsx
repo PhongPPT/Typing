@@ -8,15 +8,36 @@ type Props = {
 const TypingArea: React.FC<Props> = ({ words, lang }) => {
     const [userInput, setUserInput] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
+    const [errors, setErrors] = useState(0);
+    const [finished, setFinished] = useState(false);
     const fullText = words.join(" ");
 
     useEffect(() => {
         setUserInput("");
+        setErrors(0);
+        setFinished(false);
         inputRef.current?.focus();
-    }, [words]);
+    }, [words, lang]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setUserInput(e.target.value);
+        const value = e.target.value;
+        setUserInput(value);
+
+        if (value.length >= fullText.length) {
+            const errorCount = countErrors(fullText, value);
+            setErrors(errorCount);
+            setFinished(true);
+        }
+    };
+
+    const countErrors = (target: string, typed: string): number => {
+        let count = 0;
+        for (let i = 0; i < target.length; i++) {
+            if (typed[i] && typed[i] !== target[i]) {
+                count++;
+            }
+        }
+        return count;
     };
 
     const renderCharacters = () => {
@@ -38,25 +59,30 @@ const TypingArea: React.FC<Props> = ({ words, lang }) => {
 
     return (
         <div>
-            <div
-                className="typing-box"
-                onClick={() => inputRef.current?.focus()}
-            >
+            <div className="typing-box" onClick={() => inputRef.current?.focus()}>
                 {renderCharacters()}
             </div>
+
             <input
                 ref={inputRef}
                 type="text"
                 inputMode="text"
-                lang={lang === "lo" ? "lo" : "en"}
+                lang={lang}
                 value={userInput}
                 onChange={handleChange}
-                style={{
-                    position: "absolute",
-                    left: "-9999px",
-                }}
-                placeholder={lang === "lo" ? "ພິມພາສາລາວ..." : "Type in English..."}
+                style={{ position: "absolute", left: "-9999px" }}
+                autoComplete="off"
+                spellCheck={false}
             />
+
+            {finished && (
+                <div className="summary">
+                    <p>
+                        Finished typing! <br />
+                        ❌ Errors: <strong>{errors}</strong> / {fullText.length}
+                    </p>
+                </div>
+            )}
         </div>
     );
 };
